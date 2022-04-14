@@ -42,3 +42,20 @@ pub fn inflate<'a, In: Read + Seek + 'a>(reader: In) -> Result<Box<dyn Read + 'a
         Ok(Box::new(gz))
     }
 }
+
+pub fn normalize_wgs84(record: &mut FitDataRecord) {
+    for field_name in ["position_lat", "position_long"] {
+        if let Some(field) = record.data_field(field_name) {
+            if let &fitparser::Value::SInt32(ss) = field.value() {
+                let wgs84 = semicircles_to_wgs84(ss);
+                let field = fitparser::FitDataField::new(
+                    format!("{field_name}_wgs84"),
+                    field.number(),
+                    fitparser::Value::Float32(wgs84),
+                    "wgs84".into(),
+                );
+                record.push(field);
+            }
+        }
+    }
+}

@@ -3,7 +3,7 @@ use std::{fs::File, io::BufReader, path::PathBuf};
 use clap::Parser;
 use log::debug;
 
-use fit_utils::{inflate, semicircles_to_wgs84, FitDataRecordExt};
+use fit_utils::{inflate, normalize_wgs84, semicircles_to_wgs84, FitDataRecordExt};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -25,20 +25,7 @@ fn main() -> Result<(), anyhow::Error> {
 
         if args.wgs84 {
             for r in &mut fit {
-                for field_name in ["position_lat", "position_long"] {
-                    if let Some(field) = r.data_field(field_name) {
-                        if let &fitparser::Value::SInt32(ss) = field.value() {
-                            let wgs84 = semicircles_to_wgs84(ss);
-                            let field = fitparser::FitDataField::new(
-                                format!("{field_name}_wgs84"),
-                                field.number(),
-                                fitparser::Value::Float32(wgs84),
-                                "wgs84".into(),
-                            );
-                            r.push(field);
-                        }
-                    }
-                }
+                normalize_wgs84(r);
             }
         }
 

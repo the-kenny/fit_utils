@@ -59,3 +59,7 @@ pub fn normalize_wgs84(record: &mut FitDataRecord) {
         }
     }
 }
+
+pub fn to_json(record: &FitDataRecord) -> Result<serde_json::Value, serde_json::Error> {
+    serde_json::to_value(record)
+}

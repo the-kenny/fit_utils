@@ -25,12 +25,12 @@ fn main() -> Result<(), anyhow::Error> {
 
         if args.wgs84 {
             for r in &mut fit {
-                normalize_wgs84(r);
+                fit_utils::normalize_wgs84(r);
             }
         }
 
-        for f in fit {
-            println!("{}", serde_json::to_value(f)?.to_string());
+        for record in &fit {
+            println!("{}", fit_utils::to_json(record)?.to_string());
         }
     }
 

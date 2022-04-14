@@ -1,8 +1,4 @@
-use std::{
-    fs::File,
-    io::{BufReader, Read, Seek},
-    path::PathBuf,
-};
+use std::{fs::File, io::BufReader, path::PathBuf};
 
 use clap::Parser;
 use log::debug;
@@ -25,7 +21,7 @@ fn main() -> Result<(), anyhow::Error> {
         let file = BufReader::new(File::open(file)?);
         let mut reader = inflate(file)?;
 
-        let mut fit = fitparser::from_reader(&mut reader).unwrap();
+        let mut fit = fitparser::from_reader(&mut reader).expect("Fit parsing failed");
 
         if args.wgs84 {
             for r in &mut fit {
@@ -47,7 +43,7 @@ fn main() -> Result<(), anyhow::Error> {
         }
 
         for f in fit {
-            println!("{}", serde_json::to_value(f).unwrap().to_string());
+            println!("{}", serde_json::to_value(f)?.to_string());
         }
     }
 

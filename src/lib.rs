@@ -32,7 +32,7 @@ pub fn semicircles_to_wgs84(ss: i32) -> f32 {
     (ss as f32) * 180.0 / (2.0 as f32).powf(31.0)
 }
 
-pub fn inflate<'a, In: Read + Seek + 'a>(reader: In) -> Result<Box<dyn Read + 'a>, anyhow::Error> {
+pub fn inflate<'a, In: Read + Seek + 'a>(reader: In) -> Result<Box<dyn Read + 'a>, std::io::Error> {
     let gz = flate2::read::GzDecoder::new(reader);
     if gz.header().is_none() {
         let mut seekable = gz.into_inner();

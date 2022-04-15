@@ -8,21 +8,38 @@
 
 <body>
   <input id="fitInput" type="file" disabled />
-  <script type="module">
-    import init, { setup, WasmFitDecoder } from "./pkg/fit_utils.js";
-    init()
-      .then(() => {
-        setup();
-        window.fitDecoder = WasmFitDecoder.new();
+  <pre id="view"></pre>
+  <script src='./pkg/fit_utils.js'></script>
+  <script type="text/javascript">
+    // import init, { setup, WasmDecoder } from "./pkg/fit_utils.js";
+    async function init() {
+      await wasm_bindgen('./pkg/fit_utils_bg.wasm');
+      wasm_bindgen.setup();
 
-        let input = document.getElementById("fitInput")
-        input.removeAttribute("disabled")
-        input.addEventListener('change', async (event) => {
-          const buffer = new Uint8Array(await event.target.files[0].arrayBuffer())
-          console.log(buffer)
-          window.fitDecoder.process(buffer)
-        }, false)
-      });
+      // window.fitDecoder = WasmDecoder.new();
+      let worker = new Worker('./worker.js');
+      worker.onmessage = function (message) {
+        pre.innerText += (message.data + "\n");
+      }
+
+      let pre = document.getElementById("view");
+
+      let input = document.getElementById("fitInput")
+      input.removeAttribute("disabled")
+      input.addEventListener('change', async (event) => {
+        const buffer = new Uint8Array(await event.target.files[0].arrayBuffer())
+        // let callback = msg => {
+        //   pre.innerText += (msg + "\n");
+        // };
+        // window.fitDecoder.process(buffer, callback)
+
+        worker.postMessage(buffer);
+
+      }, false)
+
+    }
+
+    init()
   </script>
 </body>
 

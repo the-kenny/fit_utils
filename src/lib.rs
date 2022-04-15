@@ -2,10 +2,11 @@ use std::io::{Read, Seek};
 
 use fitparser::{FitDataField, FitDataRecord};
 use geo_types::Coordinate;
-use wasm_bindgen::prelude::wasm_bindgen;
 
 pub mod decoder;
-pub mod wasm_decoder;
+
+#[cfg(feature = "wasm")]
+pub mod wasm;
 
 pub trait FitDataRecordExt {
     fn data_field(&self, field_name: &str) -> Option<&FitDataField>;
@@ -66,9 +67,4 @@ pub fn normalize_wgs84(record: &mut FitDataRecord) {
 
 pub fn to_json(record: &FitDataRecord) -> Result<serde_json::Value, serde_json::Error> {
     serde_json::to_value(record)
-}
-
-#[wasm_bindgen]
-pub fn setup() {
-    wasm_logger::init(wasm_logger::Config::new(log::Level::Info));
 }

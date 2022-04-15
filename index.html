@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>hello-wasm example</title>
+</head>
+
+<body>
+  <input id="fitInput" type="file" disabled />
+  <script type="module">
+    import init, { setup, WasmFitDecoder } from "./pkg/fit_utils.js";
+    init()
+      .then(() => {
+        setup();
+        window.fitDecoder = WasmFitDecoder.new();
+
+        let input = document.getElementById("fitInput")
+        input.removeAttribute("disabled")
+        input.addEventListener('change', async (event) => {
+          const buffer = new Uint8Array(await event.target.files[0].arrayBuffer())
+          console.log(buffer)
+          window.fitDecoder.process(buffer)
+        }, false)
+      });
+  </script>
+</body>
+
+</html>

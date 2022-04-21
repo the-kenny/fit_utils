@@ -1,7 +1,6 @@
 use fitparser::{
     de::{FitObject, FitStreamProcessor},
-    profile::MesgNum,
-    FitDataField, FitDataRecord,
+    FitDataRecord,
 };
 use log::debug;
 
@@ -41,7 +40,7 @@ impl FitDecoder {
         FitDecoder { processor, buffer }
     }
 
-    pub fn decode(&mut self) -> Result<FitDecodeResult, FitDecoderError> {
+    pub fn poll(&mut self) -> Result<FitDecodeResult, FitDecoderError> {
         let len = self.buffer.len();
         debug!("self.buffer len={len}");
         loop {

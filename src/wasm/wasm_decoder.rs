@@ -1,10 +1,7 @@
 use log::info;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
-use crate::{
-    decoder::{FitDecodeResult, FitDecoder},
-    to_json,
-};
+use crate::decoder::{FitDecodeResult, FitDecoder};
 
 #[wasm_bindgen]
 pub struct WasmDecoder(FitDecoder);
@@ -20,7 +17,7 @@ impl WasmDecoder {
 
         let mut n = 0;
         loop {
-            match self.0.decode() {
+            match self.0.poll() {
                 Ok(FitDecodeResult::Record(msg)) => {
                     callback
                         .call1(

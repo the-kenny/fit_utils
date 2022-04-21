@@ -3,7 +3,7 @@ use std::{fs::File, io::BufReader, path::PathBuf};
 use clap::Parser;
 use log::debug;
 
-use fit_utils::{inflate, normalize_wgs84, semicircles_to_wgs84, FitDataRecordExt};
+use fit_utils::inflate;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]

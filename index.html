@@ -16,10 +16,9 @@
       await wasm_bindgen('./pkg/fit_utils_bg.wasm');
       wasm_bindgen.setup();
 
-      // window.fitDecoder = WasmDecoder.new();
       let worker = new Worker('./worker.js');
       worker.onmessage = function (message) {
-        pre.innerText += (message.data + "\n");
+        pre.innerText += (JSON.stringify(message.data) + "\n");
       }
 
       let pre = document.getElementById("view");
@@ -28,11 +27,6 @@
       input.removeAttribute("disabled")
       input.addEventListener('change', async (event) => {
         const buffer = new Uint8Array(await event.target.files[0].arrayBuffer())
-        // let callback = msg => {
-        //   pre.innerText += (msg + "\n");
-        // };
-        // window.fitDecoder.process(buffer, callback)
-
         worker.postMessage(buffer);
 
       }, false)

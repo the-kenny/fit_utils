@@ -19,13 +19,8 @@ impl WasmDecoder {
         loop {
             match self.0.poll() {
                 Ok(FitDecodeResult::Record(msg)) => {
-                    callback
-                        .call1(
-                            &JsValue::undefined(),
-                            &JsValue::from_str(&crate::to_json(&msg).unwrap().to_string()),
-                        )
-                        .unwrap();
-                    // info!("{msg:?}");
+                    let json = JsValue::from_serde(&crate::to_json(&msg).unwrap()).unwrap();
+                    callback.call1(&JsValue::undefined(), &json).unwrap();
                     n += 1
                 }
                 Ok(FitDecodeResult::NotEnoughData) => break,
@@ -33,6 +28,6 @@ impl WasmDecoder {
             }
         }
 
-        info!("Processed {n} messages");
+        info!("WasmDecoder.process: Processed {n} messages");
     }
 }

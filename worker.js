@@ -13,6 +13,8 @@ async function init_wasm_in_worker() {
   // Load the wasm file by awaiting the Promise returned by `wasm_bindgen`.
   await wasm_bindgen('./pkg/fit_utils_bg.wasm');
 
+  console.log('Initialized worker')
+
   let decoder = WasmDecoder.new();
   self.onmessage = async event => {
     decoder.process(event.data, msg => self.postMessage(msg));

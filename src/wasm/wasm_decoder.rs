@@ -1,7 +1,7 @@
 use log::info;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 
-use crate::decoder::{FitDecodeResult, FitDecoder};
+use crate::fit_decoder::{FitDecodeResult, FitDecoder};
 
 #[wasm_bindgen]
 pub struct WasmDecoder(FitDecoder);

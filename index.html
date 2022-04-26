@@ -18,7 +18,7 @@
 
       let worker = new Worker('./worker.js');
       worker.onmessage = function (message) {
-        pre.innerText += (JSON.stringify(message.data) + "\n");
+        // pre.innerText += (JSON.stringify(message.data) + "\n");
       }
 
       let pre = document.getElementById("view");

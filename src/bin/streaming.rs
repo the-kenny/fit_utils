@@ -3,7 +3,7 @@ use std::{fs::File, io::BufReader, path::PathBuf};
 use clap::Parser;
 use log::debug;
 
-use fit_utils::{decoder::FitDecoder, inflate};
+use fit_utils::{fit_decoder::FitDecoder, inflate};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -27,7 +27,7 @@ fn main() -> Result<(), anyhow::Error> {
             let read = reader.read(&mut buf)?;
             decoder.add_chunk(&buf[0..read]);
 
-            while let fit_utils::decoder::FitDecodeResult::Record(msg) = decoder.poll()? {
+            while let fit_utils::fit_decoder::FitDecodeResult::Record(msg) = decoder.poll()? {
                 println!("{msg:?}");
             }
 

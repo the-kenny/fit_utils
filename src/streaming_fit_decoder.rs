@@ -26,7 +26,7 @@ impl<R: Read> StreamingFitDecoder<R> {
             if let FitDecodeResult::Record(record) = self.decoder.poll()? {
                 return Ok(Some(record));
             } else {
-                let nread = self.pull_data()?;
+                let nread = dbg!(self.pull_data())?;
                 if nread == 0 {
                     return Ok(None);
                 }
@@ -74,19 +74,30 @@ pub enum StreamingFitDecoderError {
 mod tests {
     use std::io::Cursor;
 
-    use crate::fit_decoder::FitDecodeResult;
-
     use super::*;
+
+    const DATA_INFLATED: &'static [u8] = include_bytes!("test_data/22952.fit");
+    const EXPECTED: usize = 22952;
 
     #[test]
     fn test_streaming() {
-        let reader = Cursor::new(include_bytes!("test_data/test.fit"));
+        let reader = Cursor::new(DATA_INFLATED);
         let mut decoder = StreamingFitDecoder::new(reader);
 
-        let result = decoder.poll();
-        assert!(
-            matches!(result, Ok(Some(_))),
-            "Unexpected result: {result:?}"
+        let mut n = 0;
+        while let Ok(Some(_)) = decoder.poll() {
+            n += 1
+        }
+
+        assert_eq!(n, EXPECTED)
+    }
+
+    #[test]
+    fn test_iterator() {
+        let reader = Cursor::new(DATA_INFLATED);
+        assert_eq!(
+            EXPECTED,
+            StreamingFitDecoder::new(reader).into_iterator().count()
         );
     }
 }

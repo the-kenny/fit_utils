@@ -65,11 +65,15 @@ impl FitDecoder {
     }
 
     pub fn poll(&mut self) -> Result<FitDecodeResult, FitDecoderError> {
-        if let RawFitDecodeResult::Object(FitObject::DataMessage(msg)) = self.poll_raw()? {
-            let record = self.processor.decode_message(msg)?;
-            Ok(FitDecodeResult::Record(record))
-        } else {
-            Ok(FitDecodeResult::NotEnoughData)
+        loop {
+            match self.poll_raw()? {
+                RawFitDecodeResult::Object(FitObject::DataMessage(msg)) => {
+                    let record = self.processor.decode_message(msg)?;
+                    return Ok(FitDecodeResult::Record(record));
+                }
+                RawFitDecodeResult::Object(_) => continue,
+                RawFitDecodeResult::NotEnoughData => return Ok(FitDecodeResult::NotEnoughData),
+            }
         }
     }
 
@@ -82,6 +86,15 @@ impl FitDecoder {
 mod tests {
     use super::*;
 
+    const DATA: &'static [u8] = include_bytes!("test_data/22952.fit");
+    const EXPECTED: usize = 22952;
+
+    #[test]
+    fn test_22952_fit_size() {
+        let expected = fitparser::de::from_bytes(DATA).unwrap().len();
+        assert_eq!(EXPECTED, expected);
+    }
+
     #[test]
     fn poll_raw() {
         let mut d = FitDecoder::new();
@@ -91,7 +104,7 @@ mod tests {
             Ok(RawFitDecodeResult::NotEnoughData)
         ));
 
-        d.add_chunk(include_bytes!("test_data/test.fit"));
+        d.add_chunk(&DATA[..]);
 
         assert!(matches!(
             d.poll_raw(),
@@ -99,5 +112,18 @@ mod tests {
                 fitparser::de::FitObject::Header(_)
             ))
         ));
+    }
+
+    #[test]
+    fn test_count() {
+        let mut d = FitDecoder::new();
+        d.add_chunk(&DATA[..]);
+
+        let mut n = 0;
+        while let Ok(FitDecodeResult::Record(_)) = d.poll() {
+            n += 1;
+        }
+
+        assert_eq!(n, EXPECTED);
     }
 }

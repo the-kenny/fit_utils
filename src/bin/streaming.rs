@@ -21,12 +21,18 @@ fn main() -> Result<(), anyhow::Error> {
         let file = BufReader::new(File::open(file)?);
         let reader = inflate(file)?;
 
-        let mut decoder = StreamingFitDecoder::new(reader);
+        let decoder = StreamingFitDecoder::new(reader);
         // while let Ok(Some(result)) = decoder.poll() {
         //     println!("{result:?}");
         // }
 
-        decoder.into_iterator().for_each(|msg| println!("{msg:?}"))
+        let mut n: usize = 0;
+        decoder.into_iterator().for_each(|msg| {
+            n += 1;
+            println!("{msg:?}")
+        });
+
+        dbg!(n);
     }
 
     Ok(())

@@ -4,6 +4,7 @@ use fitparser::{FitDataField, FitDataRecord};
 use geo_types::Coordinate;
 
 pub mod fit_decoder;
+pub mod streaming_fit_decoder;
 // pub mod streaming_fit_decoder;
 
 #[cfg(feature = "wasm")]

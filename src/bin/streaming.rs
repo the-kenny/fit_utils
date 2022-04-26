@@ -3,7 +3,7 @@ use std::{fs::File, io::BufReader, path::PathBuf};
 use clap::Parser;
 use log::debug;
 
-use fit_utils::{fit_decoder::FitDecoder, inflate};
+use fit_utils::{fit_decoder::FitDecoder, inflate, streaming_fit_decoder::StreamingFitDecoder};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -19,22 +19,14 @@ fn main() -> Result<(), anyhow::Error> {
 
     for file in args.fit_files {
         let file = BufReader::new(File::open(file)?);
-        let mut reader = inflate(file)?;
+        let reader = inflate(file)?;
 
-        let mut decoder = FitDecoder::new();
-        loop {
-            let mut buf = [0; 1024];
-            let read = reader.read(&mut buf)?;
-            decoder.add_chunk(&buf[0..read]);
+        let mut decoder = StreamingFitDecoder::new(reader);
+        // while let Ok(Some(result)) = decoder.poll() {
+        //     println!("{result:?}");
+        // }
 
-            while let fit_utils::fit_decoder::FitDecodeResult::Record(msg) = decoder.poll()? {
-                println!("{msg:?}");
-            }
-
-            if read == 0 {
-                break;
-            }
-        }
+        decoder.into_iterator().for_each(|msg| println!("{msg:?}"))
     }
 
     Ok(())

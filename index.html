@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>hello-wasm example</title>
+</head>
+
+<body>
+  <input id="fitInput" type="file" disabled />
+  <pre id="view"></pre>
+  <script src='./pkg/fit_utils.js'></script>
+  <script type="text/javascript">
+    // import init, { setup, WasmDecoder } from "./pkg/fit_utils.js";
+    async function init() {
+      await wasm_bindgen('./pkg/fit_utils_bg.wasm');
+      wasm_bindgen.setup();
+
+      let worker = new Worker('./worker.js');
+      worker.onmessage = function (message) {
+        // pre.innerText += (JSON.stringify(message.data) + "\n");
+      }
+
+      let pre = document.getElementById("view");
+
+      let input = document.getElementById("fitInput")
+      input.removeAttribute("disabled")
+      input.addEventListener('change', async (event) => {
+        const buffer = new Uint8Array(await event.target.files[0].arrayBuffer())
+        worker.postMessage(buffer);
+
+      }, false)
+
+    }
+
+    init()
+  </script>
+</body>
+
+</html>

@@ -3,6 +3,13 @@ use std::io::{Read, Seek};
 use fitparser::{FitDataField, FitDataRecord};
 use geo_types::Coordinate;
 
+pub mod fit_decoder;
+pub mod streaming_fit_decoder;
+// pub mod streaming_fit_decoder;
+
+#[cfg(feature = "wasm")]
+pub mod wasm;
+
 pub trait FitDataRecordExt {
     fn data_field(&self, field_name: &str) -> Option<&FitDataField>;
     fn coordinates_wgs84(&self) -> Option<geo_types::Coordinate<f32>>;

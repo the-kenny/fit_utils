@@ -22,7 +22,13 @@ fn main() -> Result<(), anyhow::Error> {
         let reader = inflate(file)?;
         let decoder = StreamingFitDecoder::new(reader);
 
-        decoder.into_iterator().for_each(|msg| println!("{msg:?}"));
+        decoder.into_iterator().for_each(|msg| {
+            let msg = msg.expect("Failed to decode message");
+            let json = serde_json::to_value(&msg)
+                .expect("Failed to encode to JSON")
+                .to_string();
+            println!("{json}")
+        });
     }
 
     Ok(())

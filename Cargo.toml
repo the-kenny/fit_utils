@@ -24,5 +24,4 @@ js-sys = { version = "0.3.57", optional = true }
 crate-type = ["rlib", "cdylib"]
 
 [features]
-default = ["wasm"]
-wasm = ["dep:wasm-bindgen", "dep:wasm-logger", "dep:console_error_panic_hook", "dep:js-sys"]
+wasm = ["wasm-bindgen", "wasm-logger", "console_error_panic_hook", "js-sys"]

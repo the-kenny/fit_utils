@@ -23,6 +23,7 @@ impl WasmDecoder {
                     callback.call1(&JsValue::undefined(), &json).unwrap();
                     n += 1
                 }
+                Ok(FitDecodeResult::Eof) => break,
                 Ok(FitDecodeResult::NotEnoughData) => break,
                 Err(_) => todo!(),
             }

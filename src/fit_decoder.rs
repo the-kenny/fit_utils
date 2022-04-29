@@ -12,12 +12,14 @@ pub struct FitDecoder {
 #[derive(Debug)]
 pub enum FitDecodeResult {
     NotEnoughData,
+    Eof,
     Record(FitDataRecord),
 }
 
 #[derive(Debug)]
 pub enum RawFitDecodeResult {
     NotEnoughData,
+    Eof,
     Object(fitparser::de::FitObject),
 }
 
@@ -45,20 +47,31 @@ impl FitDecoder {
     }
 
     pub fn poll_raw(&mut self) -> Result<RawFitDecodeResult, FitDecoderError> {
-        let len = self.buffer.len();
-        debug!("self.buffer len={len}");
         loop {
-            match self.processor.deserialize_next(&self.buffer) {
+            let deserialize_result = self.processor.deserialize_next(&self.buffer);
+            debug!("deserialize_next: {deserialize_result:?}");
+            match deserialize_result {
                 Ok((rest, object)) => {
-                    // Hack: Strip self.buffer.len() - rest.len() from self.buffer to avoid copying
+                    // Strip self.buffer.len() - rest.len() from self.buffer to avoid copying
                     let to_drain = self.buffer.len() - rest.len();
                     self.buffer.drain(0..to_drain);
 
                     return Ok(RawFitDecodeResult::Object(object));
                 }
+                // We're still expecting data - buffer needs to be filled
                 Err(e) if matches!(*e, fitparser::ErrorKind::UnexpectedEof(_)) => {
                     return Ok(RawFitDecodeResult::NotEnoughData)
                 }
+                // End of file reached
+                Err(e)
+                    if matches!(
+                        *e,
+                        fitparser::ErrorKind::ParseError(_, nom::error::ErrorKind::Eof)
+                    ) =>
+                {
+                    return Ok(RawFitDecodeResult::Eof)
+                }
+                // Propagate any other errors
                 Err(e) => return Err(FitDecoderError::from(e)),
             }
         }
@@ -71,6 +84,7 @@ impl FitDecoder {
                     let record = self.processor.decode_message(msg)?;
                     return Ok(FitDecodeResult::Record(record));
                 }
+                RawFitDecodeResult::Eof => return Ok(FitDecodeResult::Eof),
                 RawFitDecodeResult::Object(_) => continue,
                 RawFitDecodeResult::NotEnoughData => return Ok(FitDecodeResult::NotEnoughData),
             }

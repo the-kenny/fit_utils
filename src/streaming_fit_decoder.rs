@@ -6,18 +6,22 @@ use thiserror::Error;
 
 use crate::fit_decoder::{self, FitDecodeResult, FitDecoder};
 
-const CHUNK_SIZE: usize = 512;
-
 pub struct StreamingFitDecoder<R: Read> {
     decoder: FitDecoder,
     reader: R,
+    chunk_size: usize,
 }
 
 impl<R: Read> StreamingFitDecoder<R> {
     pub fn new(reader: R) -> Self {
+        Self::new_with_chunk_size(reader, 512)
+    }
+
+    pub fn new_with_chunk_size(reader: R, chunk_size: usize) -> Self {
         Self {
             decoder: FitDecoder::new(),
             reader,
+            chunk_size,
         }
     }
 
@@ -26,7 +30,7 @@ impl<R: Read> StreamingFitDecoder<R> {
             if let FitDecodeResult::Record(record) = self.decoder.poll()? {
                 return Ok(Some(record));
             } else {
-                let nread = dbg!(self.pull_data())?;
+                let nread = self.pull_data()?;
                 if nread == 0 {
                     return Ok(None);
                 }
@@ -35,7 +39,7 @@ impl<R: Read> StreamingFitDecoder<R> {
     }
 
     fn pull_data(&mut self) -> std::io::Result<usize> {
-        let mut chunk = [0u8; CHUNK_SIZE];
+        let mut chunk = vec![0u8; self.chunk_size];
         let nread = self.reader.read(&mut chunk)?;
         debug!("Read {nread} bytes");
 
@@ -79,10 +83,17 @@ mod tests {
     const DATA_INFLATED: &'static [u8] = include_bytes!("test_data/22952.fit");
     const EXPECTED: usize = 22952;
 
-    #[test]
-    fn test_streaming() {
+    use test_case::test_case;
+
+    #[test_case(1; "chunk_size of 1")]
+    #[test_case(2; "chunk_size of 2")]
+    #[test_case(8; "chunk_size of 8")]
+    #[test_case(15; "chunk_size of 15")]
+    #[test_case(128; "chunk_size of 128")]
+    #[test_case(1024*1024*16; "chunk_size of 11024*1024*16")]
+    fn test_streaming(chunk_size: usize) {
         let reader = Cursor::new(DATA_INFLATED);
-        let mut decoder = StreamingFitDecoder::new(reader);
+        let mut decoder = StreamingFitDecoder::new_with_chunk_size(reader, chunk_size);
 
         let mut n = 0;
         while let Ok(Some(_)) = decoder.poll() {

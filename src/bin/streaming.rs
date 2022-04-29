@@ -21,7 +21,7 @@ fn main() -> Result<(), anyhow::Error> {
         let file = BufReader::new(File::open(file)?);
         let reader = inflate(file)?;
 
-        let decoder = StreamingFitDecoder::new(reader);
+        let decoder = StreamingFitDecoder::new_with_chunk_size(reader, 1);
         // while let Ok(Some(result)) = decoder.poll() {
         //     println!("{result:?}");
         // }

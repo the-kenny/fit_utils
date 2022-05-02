@@ -44,7 +44,7 @@ fn process_stream<R: Read>(args: &Args, input: R) -> Result<(), anyhow::Error> {
     // Handle errors
     let fit_iter = fit_iter.flat_map(|r| match r {
         Ok(r) => Some(r),
-        Err(e) if args.skip_undecodeable => panic!("Failed to decode fit message: {e}"),
+        Err(e) if !args.skip_undecodeable => panic!("Failed to decode fit message: {e}"),
         Err(e) => {
             error!("Failed to decode fit message {e}");
             None

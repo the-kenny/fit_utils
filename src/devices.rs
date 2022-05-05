@@ -43,13 +43,12 @@ impl FitDevice {
         let merge = match (ts, other_ts) {
             (Some(ts), Some(other_ts)) if ts < other_ts => true,
             (None, Some(_)) => true,
+            (None, None) => true,
             _ => false,
         };
 
         if merge {
-            for (k, v) in other.fields {
-                self.fields.insert(k, v);
-            }
+            self.fields.extend(other.fields)
         }
     }
 }

@@ -8,12 +8,11 @@ use clap::Parser;
 use log::{debug, error};
 
 use fit_utils::{inflate, streaming_fit_decoder::StreamingFitDecoder};
+use serde_json::json;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-    #[clap(long)]
-    wgs84: bool,
     #[clap(long)]
     skip_undecodeable: bool,
     fit_files: Vec<PathBuf>,
@@ -53,19 +52,14 @@ fn process_stream<R: Read>(args: &Args, input: R) -> Result<(), anyhow::Error> {
         }
     });
 
-    // WGS84 Pipeline
-    let fit_iter = fit_iter.map(|mut r| {
-        if args.wgs84 {
-            fit_utils::normalize_wgs84(&mut r);
-            r
-        } else {
-            r
-        }
+    let (creator, devices) = fit_utils::devices::extract_devices(fit_iter);
+
+    let json = json!({
+        "creator": creator,
+        "devices": devices.values().collect::<Vec<_>>()
     });
 
-    for record in fit_iter {
-        println!("{}", fit_utils::to_json(&record)?);
-    }
+    println!("{json}");
 
     Ok(())
 }

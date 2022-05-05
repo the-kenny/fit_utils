@@ -80,9 +80,6 @@ mod tests {
 
     use super::*;
 
-    const DATA_INFLATED: &'static [u8] = include_bytes!("test_data/22952.fit");
-    const EXPECTED: usize = 22952;
-
     use test_case::test_case;
 
     #[test_case(1; "chunk_size of 1")]
@@ -92,7 +89,7 @@ mod tests {
     #[test_case(128; "chunk_size of 128")]
     #[test_case(1024*1024*16; "chunk_size of 11024*1024*16")]
     fn test_streaming(chunk_size: usize) {
-        let reader = Cursor::new(DATA_INFLATED);
+        let reader = Cursor::new(crate::test_fixtures::DATA_INFLATED);
         let mut decoder = StreamingFitDecoder::new_with_chunk_size(reader, chunk_size);
 
         let mut n = 0;
@@ -100,14 +97,14 @@ mod tests {
             n += 1
         }
 
-        assert_eq!(n, EXPECTED)
+        assert_eq!(n, crate::test_fixtures::DATA_MESSAGE_COUNT)
     }
 
     #[test]
     fn test_iterator() {
-        let reader = Cursor::new(DATA_INFLATED);
+        let reader = Cursor::new(crate::test_fixtures::DATA_INFLATED);
         assert_eq!(
-            EXPECTED,
+            crate::test_fixtures::DATA_MESSAGE_COUNT,
             StreamingFitDecoder::new(reader).into_iterator().count()
         );
     }

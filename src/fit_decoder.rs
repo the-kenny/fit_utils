@@ -100,8 +100,8 @@ impl FitDecoder {
 mod tests {
     use super::*;
 
-    const DATA: &'static [u8] = include_bytes!("test_data/22952.fit");
-    const EXPECTED: usize = 22952;
+    const DATA: &'static [u8] = crate::test_fixtures::DATA_INFLATED;
+    const EXPECTED: usize = crate::test_fixtures::DATA_MESSAGE_COUNT;
 
     #[test]
     fn test_22952_fit_size() {

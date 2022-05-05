@@ -3,9 +3,16 @@ use std::io::{Read, Seek};
 use fitparser::{FitDataField, FitDataRecord};
 use geo_types::Coordinate;
 
+pub mod devices;
 pub mod fit_decoder;
 pub mod streaming_fit_decoder;
 // pub mod streaming_fit_decoder;
+
+#[cfg(test)]
+pub mod test_fixtures {
+    pub const DATA_INFLATED: &'static [u8] = include_bytes!("test_data/22952.fit");
+    pub const DATA_MESSAGE_COUNT: usize = 22952;
+}
 
 #[cfg(feature = "wasm")]
 pub mod wasm;

@@ -8,18 +8,19 @@ use clap::Parser;
 use log::{debug, error};
 
 use fit_utils::{inflate, streaming_fit_decoder::StreamingFitDecoder};
+use serde_json::json;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-    #[clap(long)]
-    wgs84: bool,
     #[clap(long)]
     skip_undecodeable: bool,
     fit_files: Vec<PathBuf>,
 }
 
 fn main() -> Result<(), anyhow::Error> {
+    env_logger::init();
+
     let args = Args::parse();
     debug!("Args: {args:?}");
 
@@ -44,26 +45,21 @@ fn process_stream<R: Read>(args: &Args, input: R) -> Result<(), anyhow::Error> {
     // Handle errors
     let fit_iter = fit_iter.flat_map(|r| match r {
         Ok(r) => Some(r),
-        Err(e) if !args.skip_undecodeable => panic!("Failed to decode fit message: {e}"),
+        Err(e) if args.skip_undecodeable => panic!("Failed to decode fit message: {e}"),
         Err(e) => {
             error!("Failed to decode fit message {e}");
             None
         }
     });
 
-    // WGS84 Pipeline
-    let fit_iter = fit_iter.map(|mut r| {
-        if args.wgs84 {
-            fit_utils::normalize_wgs84(&mut r);
-            r
-        } else {
-            r
-        }
+    let (creator, devices) = fit_utils::devices::extract_devices(fit_iter);
+
+    let json = json!({
+        "creator": creator,
+        "devices": devices.values().collect::<Vec<_>>()
     });
 
-    for record in fit_iter {
-        println!("{}", fit_utils::to_json(&record)?);
-    }
+    println!("{json}");
 
     Ok(())
 }

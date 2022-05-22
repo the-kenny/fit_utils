@@ -84,18 +84,20 @@ pub fn extract_devices(
 
 #[cfg(test)]
 mod test {
-    use crate::streaming_fit_decoder::StreamingFitDecoder;
+    use crate::{streaming_fit_decoder::StreamingFitDecoder, test_fixtures::TEST_FILES};
 
     use super::extract_devices;
 
     #[test]
     fn test_extraction() {
-        let msgs = StreamingFitDecoder::new(crate::test_fixtures::DATA_INFLATED)
-            .into_iterator()
-            .map(|r| r.unwrap());
-        let (creator, devices) = extract_devices(msgs);
+        for &(data, _msg_count) in TEST_FILES {
+            let msgs = StreamingFitDecoder::new(data)
+                .into_iterator()
+                .map(|r| r.unwrap());
+            let (creator, devices) = extract_devices(msgs);
 
-        println!("{}", serde_json::to_string(&creator).unwrap());
-        println!("{}", serde_json::to_string(&devices).unwrap());
+            println!("{}", serde_json::to_string(&creator).unwrap());
+            println!("{}", serde_json::to_string(&devices).unwrap());
+        }
     }
 }

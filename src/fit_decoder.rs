@@ -98,46 +98,51 @@ impl FitDecoder {
 
 #[cfg(test)]
 mod tests {
+    use crate::test_fixtures::TEST_FILES;
+
     use super::*;
 
-    const DATA: &'static [u8] = crate::test_fixtures::DATA_INFLATED;
-    const EXPECTED: usize = crate::test_fixtures::DATA_MESSAGE_COUNT;
-
     #[test]
-    fn test_22952_fit_size() {
-        let expected = fitparser::de::from_bytes(DATA).unwrap().len();
-        assert_eq!(EXPECTED, expected);
+    fn test_data_size() {
+        for &(data, msg_count) in TEST_FILES {
+            let expected = fitparser::de::from_bytes(data).unwrap().len();
+            assert_eq!(msg_count, expected);
+        }
     }
 
     #[test]
     fn poll_raw() {
-        let mut d = FitDecoder::new();
+        for &(data, _msg_count) in TEST_FILES {
+            let mut d = FitDecoder::new();
 
-        assert!(matches!(
-            d.poll_raw(),
-            Ok(RawFitDecodeResult::NotEnoughData)
-        ));
+            assert!(matches!(
+                d.poll_raw(),
+                Ok(RawFitDecodeResult::NotEnoughData)
+            ));
 
-        d.add_chunk(&DATA[..]);
+            d.add_chunk(&data[..]);
 
-        assert!(matches!(
-            d.poll_raw(),
-            Ok(RawFitDecodeResult::Object(
-                fitparser::de::FitObject::Header(_)
-            ))
-        ));
+            assert!(matches!(
+                d.poll_raw(),
+                Ok(RawFitDecodeResult::Object(
+                    fitparser::de::FitObject::Header(_)
+                ))
+            ));
+        }
     }
 
     #[test]
     fn test_count() {
-        let mut d = FitDecoder::new();
-        d.add_chunk(&DATA[..]);
+        for &(data, msg_count) in TEST_FILES {
+            let mut d = FitDecoder::new();
+            d.add_chunk(&data[..]);
 
-        let mut n = 0;
-        while let Ok(FitDecodeResult::Record(_)) = d.poll() {
-            n += 1;
+            let mut n = 0;
+            while let Ok(FitDecodeResult::Record(_)) = d.poll() {
+                n += 1;
+            }
+
+            assert_eq!(n, msg_count);
         }
-
-        assert_eq!(n, EXPECTED);
     }
 }

@@ -10,8 +10,16 @@ pub mod streaming_fit_decoder;
 
 #[cfg(test)]
 pub mod test_fixtures {
-    pub const DATA_INFLATED: &'static [u8] = include_bytes!("test_data/22952.fit");
-    pub const DATA_MESSAGE_COUNT: usize = 22952;
+    pub const TEST_FILES: &[(&'static [u8], usize)] = &[
+        (
+            include_bytes!("test_data/2022-05-07_Ride_i5616171.fit"),
+            39608,
+        ),
+        (
+            include_bytes!("test_data/2022-05-15_Ride_i5776435.fit"),
+            26316,
+        ),
+    ];
 }
 
 #[cfg(feature = "wasm")]

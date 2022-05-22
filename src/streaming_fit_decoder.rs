@@ -78,6 +78,8 @@ pub enum StreamingFitDecoderError {
 mod tests {
     use std::io::Cursor;
 
+    use crate::test_fixtures::TEST_FILES;
+
     use super::*;
 
     use test_case::test_case;
@@ -89,23 +91,27 @@ mod tests {
     #[test_case(128; "chunk_size of 128")]
     #[test_case(1024*1024*16; "chunk_size of 11024*1024*16")]
     fn test_streaming(chunk_size: usize) {
-        let reader = Cursor::new(crate::test_fixtures::DATA_INFLATED);
-        let mut decoder = StreamingFitDecoder::new_with_chunk_size(reader, chunk_size);
+        for &(data, msg_count) in TEST_FILES {
+            let reader = Cursor::new(data);
+            let mut decoder = StreamingFitDecoder::new_with_chunk_size(reader, chunk_size);
 
-        let mut n = 0;
-        while let Ok(Some(_)) = decoder.poll() {
-            n += 1
+            let mut n = 0;
+            while let Ok(Some(_)) = decoder.poll() {
+                n += 1
+            }
+
+            assert_eq!(n, msg_count)
         }
-
-        assert_eq!(n, crate::test_fixtures::DATA_MESSAGE_COUNT)
     }
 
     #[test]
     fn test_iterator() {
-        let reader = Cursor::new(crate::test_fixtures::DATA_INFLATED);
-        assert_eq!(
-            crate::test_fixtures::DATA_MESSAGE_COUNT,
-            StreamingFitDecoder::new(reader).into_iterator().count()
-        );
+        for &(data, msg_count) in TEST_FILES {
+            let reader = Cursor::new(data);
+            assert_eq!(
+                msg_count,
+                StreamingFitDecoder::new(reader).into_iterator().count()
+            );
+        }
     }
 }

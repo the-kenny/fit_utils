@@ -56,7 +56,7 @@ fn process_stream<R: Read>(args: &Args, input: R) -> Result<(), anyhow::Error> {
 
     let json = json!({
         "creator": creator,
-        "devices": devices.values().collect::<Vec<_>>()
+        "devices": devices,
     });
 
     println!("{json}");

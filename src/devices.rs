@@ -7,9 +7,8 @@ use serde::Serialize;
 use crate::FitDataRecordExt;
 
 type CreatorDevice = FitDevice;
-type AntDeviceNumber = u16;
 
-#[derive(Default, Debug, Serialize)]
+#[derive(Default, Debug, Serialize, PartialEq)]
 pub struct FitDevice {
     #[serde(flatten)]
     fields: HashMap<String, fitparser::Value>,
@@ -55,9 +54,10 @@ impl FitDevice {
 
 pub fn extract_devices(
     iter: impl Iterator<Item = FitDataRecord>,
-) -> (CreatorDevice, HashMap<AntDeviceNumber, FitDevice>) {
+) -> (CreatorDevice, Vec<FitDevice>) {
     let mut creator = FitDevice::default();
-    let mut devices = HashMap::new();
+    let mut devices_by_ant_device_number = HashMap::new();
+    let mut devices_by_serial_number = HashMap::new();
 
     iter.filter(|m| m.kind() == fitparser::profile::MesgNum::DeviceInfo)
         .for_each(|msg| {
@@ -66,18 +66,35 @@ pub fn extract_devices(
             if device_index == &Value::String("creator".into()) {
                 creator.extend(&msg);
             } else {
-                let field_value = msg.data_field("ant_device_number").map(|f| f.value());
-                if let Some(Value::UInt16z(ant_device_number)) = field_value {
+                let ant_device_number = msg.data_field("ant_device_number").map(|f| f.value());
+                let serial_number = msg.data_field("serial_number").map(|f| f.value());
+
+                if let Some(Value::UInt16z(ant_device_number)) = ant_device_number {
                     let device = FitDevice::new(&msg);
-                    devices
+                    devices_by_ant_device_number
                         .entry(*ant_device_number)
                         .and_modify(|d: &mut FitDevice| d.extend(&msg))
                         .or_insert(device);
+                } else if let Some(Value::UInt32z(serial_number)) = serial_number {
+                    let device = FitDevice::new(&msg);
+                    devices_by_serial_number
+                        .entry(*serial_number)
+                        .and_modify(|d: &mut FitDevice| d.extend(&msg))
+                        .or_insert(device);
                 } else {
-                    warn!("DeviceInfo without ant_device_number: {msg:?}")
+                    warn!("DeviceInfo without ant_device_number or serial_number: {msg:?}")
                 }
             }
         });
+
+    let devices = match (devices_by_ant_device_number, devices_by_serial_number) {
+        (dant, dsn) if dant.is_empty() => dsn.into_values().collect(),
+        (dant, dsn) if dsn.is_empty() => dant.into_values().collect(),
+        (dant, dsn) => {
+            warn!("Found devices without ant_device_number and devices without serial_number. Merging (there may be duplicates)");
+            dant.into_values().chain(dsn.into_values()).collect()
+        }
+    };
 
     (creator, devices)
 }
@@ -94,10 +111,24 @@ mod test {
             let msgs = StreamingFitDecoder::new(data)
                 .into_iterator()
                 .map(|r| r.unwrap());
-            let (creator, devices) = extract_devices(msgs);
+            let (_creator, devices) = extract_devices(msgs);
 
-            println!("{}", serde_json::to_string(&creator).unwrap());
-            println!("{}", serde_json::to_string(&devices).unwrap());
+            assert!(devices.len() > 0);
+
+            // println!("{}", serde_json::to_string(&creator).unwrap());
+            // println!("{}", serde_json::to_string(&devices).unwrap());
         }
+    }
+
+    #[test]
+    fn test_device_extraction_2016_garmin_edge520() {
+        let data = include_bytes!("test_data/Edge520-PowerTapG3-2016-12-17-11-03-20.fit");
+        let msgs = StreamingFitDecoder::new(&data[..])
+            .into_iterator()
+            .map(|r| r.unwrap());
+
+        let (_creator, devices) = extract_devices(msgs);
+        assert_ne!(devices, vec![]);
+        assert!(devices.len() > 0);
     }
 }

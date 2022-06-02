@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>hello-wasm example</title>
+</head>
+
+<body>
+  <!-- <input id="fitInput" type="file" disabled /> -->
+  <!-- <pre id="view"></pre> -->
+  <script src='./fit_utils.js'></script>
+  <script type="module">
+    import { h, render } from 'https://unpkg.com/preact@latest?module';
+    import { useState, useEffect } from 'https://unpkg.com/preact@latest/hooks/dist/hooks.module.js?module';
+    import htm from "https://unpkg.com/htm@latest/dist/htm.module.js?module";
+
+    async function initWasmWorker(onmessage) {
+      await wasm_bindgen('../pkg/fit_utils_bg.wasm');
+      wasm_bindgen.setup();
+
+      let worker = new Worker('./worker.js');
+      worker.onmessage = onmessage;
+
+      return worker;
+    }
+
+    // Initialize htm with Preact
+    const html = htm.bind(h);
+
+    function App(props) {
+      const [worker, setWorker] = useState(undefined);
+
+      const onmessage = (message) => {
+        if (message.data == 'initialized') {
+          setWorker(message.target)
+        } else {
+          console.log(message)
+        }
+      }
+
+      useEffect(() => {
+        initWasmWorker(onmessage)
+      }, []);
+
+      const fileChanged = async (event) => {
+        console.log("Got file:", event);
+        const buffer = new Uint8Array(await event.target.files[0].arrayBuffer());
+        worker.postMessage(buffer);
+      };
+
+      return html`
+      <input type="file" onchange=${fileChanged} disabled=${worker == null} />
+      <pre style=${{ display: worker == null ? 'block' : 'none' }}>
+        Initializing WASM Background Worker. If this takes longer than a few seconds, something went wrong. Please check the developer console for any error messages.
+      </pre>
+      `
+    }
+
+    render(html`<${App} />`, document.body);
+  </script>
+</body>
+
+</html>

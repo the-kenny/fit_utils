@@ -1,7 +1,7 @@
 // The worker has its own scope and no direct access to functions/objects of the
 // global scope. We import the generated JS file to make `wasm_bindgen`
 // available which we need to initialize our WASM code.
-importScripts('./pkg/fit_utils.js');
+importScripts('./fit_utils.js');
 
 console.log('Initializing worker')
 
@@ -11,11 +11,13 @@ const { setup, WasmDecoder } = wasm_bindgen;
 
 async function init_wasm_in_worker() {
   // Load the wasm file by awaiting the Promise returned by `wasm_bindgen`.n
-  await wasm_bindgen('./pkg/fit_utils_bg.wasm');
+  await wasm_bindgen('./fit_utils_bg.wasm');
 
   setup();
 
   console.log('Initialized worker')
+
+  self.postMessage('initialized');
 
   let decoder = WasmDecoder.new();
   self.onmessage = async event => {

@@ -2,5 +2,5 @@
 
 members = [
     "fit_utils",
-    # "velo",
+    "velo",
 ]

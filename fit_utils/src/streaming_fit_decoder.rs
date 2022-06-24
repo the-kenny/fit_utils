@@ -12,9 +12,11 @@ pub struct StreamingFitDecoder<R: Read> {
     chunk_size: usize,
 }
 
+const DEFAULT_CHUNK_SIZE: usize = 1024 * 1024;
+
 impl<R: Read> StreamingFitDecoder<R> {
     pub fn new(reader: R) -> Self {
-        Self::new_with_chunk_size(reader, 512)
+        Self::new_with_chunk_size(reader, DEFAULT_CHUNK_SIZE)
     }
 
     pub fn new_with_chunk_size(reader: R, chunk_size: usize) -> Self {

@@ -1,0 +1,33 @@
+[package]
+edition = "2021"
+name = "fit_utils"
+version = "0.1.0"
+
+[dependencies]
+anyhow = "1.0.57"
+chrono = "0.4.19"
+clap = { version = "3.1.18", features = ["derive"] }
+fitparser = "0.5.0"
+flate2 = "1.0.24"
+geo-types = "0.7.4"
+log = "0.4.17"
+serde = "1.0.137"
+serde_json = "1.0.81"
+thiserror = "1.0.31"
+wasm-bindgen = { version = "0.2.80", optional = true, features = ["serde-serialize"] }
+wasm-logger = { version = "0.2.0", optional = true }
+console_error_panic_hook = { version = "0.1.7", optional = true }
+js-sys = { version = "0.3.57", optional = true }
+nom = "7.1.1"
+env_logger = "0.9.0"
+
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[dev-dependencies]
+test-case = "2.1.0"
+
+[features]
+default = []
+wasm = ["wasm-bindgen", "wasm-logger", "console_error_panic_hook", "js-sys"]

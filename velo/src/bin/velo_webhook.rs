@@ -20,12 +20,20 @@ pub fn wahoo_webhook(
         let response = Response::from_string("Invalid webhook token")
             .with_status_code(400)
             .boxed();
+
         return Ok(response);
     }
 
     debug!("Webhook Data: {webhook:?}");
-    wahoo::handle_webhook(&config.sqlite_directory, &webhook)
-        .map(|_| Response::new_empty(200.into()).boxed())
+
+    wahoo::handle_webhook(&config.sqlite_directory, &webhook)?;
+
+    info!(
+        "Persisted webhook {} for user {}",
+        webhook.workout_summary.id, webhook.user.id
+    );
+
+    Ok(Response::new_empty(200.into()).boxed())
 }
 
 pub fn main() -> Result<(), anyhow::Error> {
@@ -39,9 +47,11 @@ pub fn main() -> Result<(), anyhow::Error> {
 
     let server = Server::http("0.0.0.0:8000").unwrap();
 
+    info!("Running server at {}", server.server_addr().to_string());
+
     for mut request in server.incoming_requests() {
         info!(
-            "received request! method: {:?}, url: {:?}, headers: {:?}",
+            "Request: method: {:?}, url: {:?}, headers: {:?}",
             request.method(),
             request.url(),
             request.headers()
@@ -61,6 +71,8 @@ pub fn main() -> Result<(), anyhow::Error> {
 
         request.respond(response)?;
     }
+
+    info!("Shutting down...");
 
     Ok(())
 }

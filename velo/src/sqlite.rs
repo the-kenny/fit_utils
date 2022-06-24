@@ -17,16 +17,19 @@ pub enum Error {
 }
 
 impl Db {
-    pub fn new<P: AsRef<Path>>(path: P) -> Result<Db, Error> {
-        let mut db = Connection::open(path)?;
-        initialize(&mut db)?;
-        Ok(Db(db))
+    fn new_with_initialize(conn: Connection) -> Result<Self, Error> {
+        let mut db = Db(conn);
+        db.maybe_initialize()?;
+        Ok(db)
     }
 
-    pub fn in_memory() -> Result<Db, Error> {
-        let mut db = Connection::open_in_memory()?;
-        initialize(&mut db)?;
-        Ok(Db(db))
+    pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
+        info!("Opening database at {}", path.as_ref().display());
+        Self::new_with_initialize(Connection::open(path)?)
+    }
+
+    pub fn in_memory() -> Result<Self, Error> {
+        Self::new_with_initialize(Connection::open_in_memory()?)
     }
 
     pub fn insert_webhook_row(&mut self, row: &WahooWebhook) -> Result<i64, Error> {
@@ -51,23 +54,23 @@ impl Db {
 
         Ok(iter.collect())
     }
-}
 
-fn initialize(db: &mut Connection) -> Result<(), Error> {
-    let exists = {
-        let mut stmt = db.prepare(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='wahoo_webhooks'",
-        )?;
-        let exists = stmt.query(params![])?.next()?.is_some();
-        exists
-    };
+    fn maybe_initialize(&mut self) -> Result<(), Error> {
+        let exists = {
+            let mut stmt = self.0.prepare(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='wahoo_webhooks'",
+            )?;
+            let exists = stmt.query(params![])?.next()?.is_some();
+            exists
+        };
 
-    if exists {
-        info!("Schema alread initialized");
-        Ok(())
-    } else {
-        info!("Initializing schema...");
-        Ok(db.execute_batch(include_str!("schema.sql"))?)
+        if exists {
+            info!("Schema already initialized");
+            Ok(())
+        } else {
+            info!("Initializing schema...");
+            Ok(self.0.execute_batch(include_str!("schema.sql"))?)
+        }
     }
 }
 

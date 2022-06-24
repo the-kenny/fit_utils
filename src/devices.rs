@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use fitparser::{FitDataRecord, Value};
+use fitparser::{FitDataField, FitDataRecord, Value};
 use log::warn;
 use serde::Serialize;
 
@@ -59,8 +59,8 @@ pub fn extract_devices(
     let mut devices_by_ant_device_number = HashMap::new();
     let mut devices_by_serial_number = HashMap::new();
 
-    iter.filter(|m| m.kind() == fitparser::profile::MesgNum::DeviceInfo)
-        .for_each(|msg| {
+    iter.for_each(|msg| match &msg.kind() {
+        fitparser::profile::MesgNum::DeviceInfo => {
             let device_index = msg.data_field("device_index").unwrap().value();
 
             if device_index == &Value::String("creator".into()) {
@@ -85,7 +85,16 @@ pub fn extract_devices(
                     warn!("DeviceInfo without ant_device_number or serial_number: {msg:?}")
                 }
             }
-        });
+        }
+        fitparser::profile::MesgNum::Record => {
+            if let Some(battery_soc_field) = msg.data_field("battery_soc") {
+                creator
+                    .fields
+                    .insert("battery_soc".into(), battery_soc_field.value().clone());
+            }
+        }
+        _ => (),
+    });
 
     let devices = match (devices_by_ant_device_number, devices_by_serial_number) {
         (dant, dsn) if dant.is_empty() => dsn.into_values().collect(),

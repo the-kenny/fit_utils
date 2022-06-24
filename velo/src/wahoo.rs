@@ -20,7 +20,7 @@ pub fn handle_webhook(
     sqlite_directory: impl AsRef<Path>,
     webhook: &WahooWebhook,
 ) -> Result<(), anyhow::Error> {
-    let sqlite_filename = format!("velo_wahoo_{}.sqlite", webhook.user.id);
+    let sqlite_filename = format!("wahoo_{}.sqlite", webhook.user.id);
     let mut path = sqlite_directory.as_ref().to_path_buf();
     path.push(sqlite_filename);
 

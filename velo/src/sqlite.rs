@@ -19,7 +19,9 @@ pub enum Error {
 impl Db {
     fn new_with_initialize(conn: Connection) -> Result<Self, Error> {
         let mut db = Db(conn);
+        db.0.pragma_update(None, "foreign_keys", &"ON")?;
         db.maybe_initialize()?;
+        db.run_migrations()?;
         Ok(db)
     }
 
@@ -58,19 +60,48 @@ impl Db {
     fn maybe_initialize(&mut self) -> Result<(), Error> {
         let exists = {
             let mut stmt = self.0.prepare(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='wahoo_webhooks'",
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='migrations'",
             )?;
             let exists = stmt.query(params![])?.next()?.is_some();
             exists
         };
 
         if exists {
-            info!("Schema already initialized");
+            debug!("Table 'migrations' already exists");
             Ok(())
         } else {
-            info!("Initializing schema...");
-            Ok(self.0.execute_batch(include_str!("schema.sql"))?)
+            debug!("Creating table 'migrations'...");
+            Ok(self.0.execute_batch(include_str!("schema_base.sql"))?)
         }
+    }
+
+    fn run_migrations(&mut self) -> Result<(), rusqlite::Error> {
+        for (name, sql) in MIGRATIONS {
+            let has_migration = self
+                .0
+                .query_row(
+                    "select true from migrations where name = ?",
+                    params![name],
+                    |_| Ok(()),
+                )
+                .optional()?
+                .is_some();
+
+            if has_migration == false {
+                debug!("Executing migration {}", name);
+
+                self.0.execute_batch(sql)?;
+
+                self.0.execute(
+                    "insert into migrations (name, executed) values (?, ?)",
+                    params![name, chrono::Local::now()],
+                )?;
+            } else {
+                debug!("Migration {name} already run")
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -96,3 +127,13 @@ mod test {
         assert_eq!(db.webhook_rows().unwrap(), vec![wh]);
     }
 }
+
+macro_rules! migration {
+    ( $x:expr ) => {
+        ($x, include_str!(concat!("migrations/", $x)))
+    };
+}
+const MIGRATIONS: &[(&str, &str)] = &[
+    migration!("001-wahoo_webhooks.sql"),
+    migration!("002-fit_files.sql"),
+];

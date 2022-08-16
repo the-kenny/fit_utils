@@ -16,11 +16,33 @@ pub struct WahooWebhook {
     pub extra: HashMap<String, serde_json::Value>,
 }
 
+#[derive(Debug, Deserialize, PartialEq, Eq, Serialize)]
+pub struct WahooUser {
+    pub id: u64,
+    #[serde(flatten)]
+    pub extra: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, Deserialize, PartialEq, Eq, Serialize)]
+pub struct WahooWorkoutSummary {
+    pub id: u64,
+    pub file: WahooWorkoutSummaryFile,
+    #[serde(flatten)]
+    pub extra: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, Deserialize, PartialEq, Eq, Serialize)]
+pub struct WahooWorkoutSummaryFile {
+    pub url: String,
+    #[serde(flatten)]
+    pub extra: HashMap<String, serde_json::Value>,
+}
+
 pub fn handle_webhook(
     sqlite_directory: impl AsRef<Path>,
     webhook: &WahooWebhook,
 ) -> Result<(), anyhow::Error> {
-    let sqlite_filename = format!("velo_wahoo_{}.sqlite", webhook.user.id);
+    let sqlite_filename = format!("wahoo_{}.sqlite", webhook.user.id);
     let mut path = sqlite_directory.as_ref().to_path_buf();
     path.push(sqlite_filename);
 
@@ -32,22 +54,6 @@ pub fn handle_webhook(
     debug!("Inserted Webhook {:?} as {}", webhook, rowid);
 
     Ok(())
-}
-
-#[derive(Debug, Deserialize, PartialEq, Eq, Serialize)]
-pub struct WahooUser {
-    pub id: u64,
-}
-
-#[derive(Debug, Deserialize, PartialEq, Eq, Serialize)]
-pub struct WahooWorkoutSummary {
-    pub id: u64,
-    pub file: WahooWorkoutSummaryFile,
-}
-
-#[derive(Debug, Deserialize, PartialEq, Eq, Serialize)]
-pub struct WahooWorkoutSummaryFile {
-    pub url: String,
 }
 
 #[cfg(test)]

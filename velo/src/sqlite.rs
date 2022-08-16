@@ -34,6 +34,10 @@ impl Db {
         Self::new_with_initialize(Connection::open_in_memory()?)
     }
 
+    pub fn raw(&mut self) -> &mut Connection {
+        &mut self.0
+    }
+
     pub fn insert_webhook_row(&mut self, row: &WahooWebhook) -> Result<i64, Error> {
         let data = serde_json::to_string(&row)?;
         let created_at = chrono::Utc::now();

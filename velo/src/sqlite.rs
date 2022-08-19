@@ -20,7 +20,6 @@ impl Db {
     fn new_with_initialize(conn: Connection) -> Result<Self, Error> {
         let mut db = Db(conn);
         db.0.pragma_update(None, "foreign_keys", &"ON")?;
-        db.maybe_initialize()?;
         db.run_migrations()?;
         Ok(db)
     }
@@ -61,37 +60,9 @@ impl Db {
         Ok(iter.collect())
     }
 
-    fn maybe_initialize(&mut self) -> Result<(), Error> {
-        let exists = {
-            let mut stmt = self.0.prepare(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='migrations'",
-            )?;
-            let exists = stmt.query(params![])?.next()?.is_some();
-            exists
-        };
-
-        if exists {
-            debug!("Table 'migrations' already exists");
-            Ok(())
-        } else {
-            debug!("Creating table 'migrations'...");
-            Ok(self.0.execute_batch(include_str!("schema_base.sql"))?)
-        }
-    }
-
     fn run_migrations(&mut self) -> Result<(), rusqlite::Error> {
         for (name, sql) in MIGRATIONS {
-            let has_migration = self
-                .0
-                .query_row(
-                    "select true from migrations where name = ?",
-                    params![name],
-                    |_| Ok(()),
-                )
-                .optional()?
-                .is_some();
-
-            if has_migration == false {
+            if self.is_new_migration(name)? {
                 debug!("Executing migration {}", name);
 
                 self.0.execute_batch(sql)?;
@@ -106,6 +77,32 @@ impl Db {
         }
 
         Ok(())
+    }
+
+    fn is_new_migration(&mut self, name: &str) -> Result<bool, rusqlite::Error> {
+        let migration_table_exists = self
+            .0
+            .query_row(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='migrations'",
+                [],
+                |_| Ok(()),
+            )
+            .optional()?
+            .is_some();
+
+        if migration_table_exists == false {
+            Ok(true)
+        } else {
+            Ok(self
+                .0
+                .query_row(
+                    "select true from migrations where name = ?",
+                    params![name],
+                    |_| Ok(()),
+                )
+                .optional()?
+                .is_none())
+        }
     }
 }
 
@@ -138,6 +135,7 @@ macro_rules! migration {
     };
 }
 const MIGRATIONS: &[(&str, &str)] = &[
+    migration!("000-migrations.sql"),
     migration!("001-wahoo_webhooks.sql"),
     migration!("002-fit_files.sql"),
 ];

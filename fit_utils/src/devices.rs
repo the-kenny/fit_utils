@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use fitparser::{FitDataField, FitDataRecord, Value};
+use fitparser::{FitDataRecord, Value};
 use log::warn;
 use serde::Serialize;
 
